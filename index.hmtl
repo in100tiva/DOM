@@ -1,0 +1,2281 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Entendendo o DOM JavaScript</title>
+    <script src="https://cdn.tailwindcss.com/3.4.16"></script>
+    <script>tailwind.config={theme:{extend:{colors:{primary:'#4f46e5',secondary:'#a855f7'},borderRadius:{'none':'0px','sm':'4px',DEFAULT:'8px','md':'12px','lg':'16px','xl':'20px','2xl':'24px','3xl':'32px','full':'9999px','button':'8px'}}}}</script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/4.6.0/remixicon.min.css">
+    <style>
+        :where([class^="ri-"])::before { content: "\f3c2"; }
+        body {
+            font-family: 'Inter', sans-serif;
+            scroll-behavior: smooth;
+        }
+        .code-editor {
+            font-family: 'Fira Code', monospace;
+        }
+        .progress-bar {
+            transition: width 0.3s ease;
+        }
+        .result-highlight {
+            transition: background-color 0.5s ease;
+        }
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        .custom-checkbox {
+            position: relative;
+            cursor: pointer;
+        }
+        .custom-checkbox input {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+        }
+        .checkmark {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 20px;
+            width: 20px;
+            background-color: #f3f4f6;
+            border: 2px solid #d1d5db;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+        .custom-checkbox:hover input ~ .checkmark {
+            background-color: #e5e7eb;
+        }
+        .custom-checkbox input:checked ~ .checkmark {
+            background-color: #4f46e5;
+            border-color: #4f46e5;
+        }
+        .checkmark:after {
+            content: "";
+            position: absolute;
+            display: none;
+        }
+        .custom-checkbox input:checked ~ .checkmark:after {
+            display: block;
+        }
+        .custom-checkbox .checkmark:after {
+            left: 6px;
+            top: 2px;
+            width: 5px;
+            height: 10px;
+            border: solid white;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+        .custom-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+        .custom-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .switch-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #e5e7eb;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        .switch-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .switch-slider {
+            background-color: #4f46e5;
+        }
+        input:checked + .switch-slider:before {
+            transform: translateX(26px);
+        }
+        .range-slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            border-radius: 5px;
+            background: #e5e7eb;
+            outline: none;
+        }
+        .range-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #4f46e5;
+            cursor: pointer;
+        }
+        .range-slider::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #4f46e5;
+            cursor: pointer;
+            border: none;
+        }
+        .custom-radio {
+            position: relative;
+            cursor: pointer;
+        }
+        .custom-radio input {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+        }
+        .radio-mark {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 20px;
+            width: 20px;
+            background-color: #f3f4f6;
+            border: 2px solid #d1d5db;
+            border-radius: 50%;
+            transition: all 0.2s ease;
+        }
+        .custom-radio:hover input ~ .radio-mark {
+            background-color: #e5e7eb;
+        }
+        .custom-radio input:checked ~ .radio-mark {
+            background-color: #f3f4f6;
+            border-color: #4f46e5;
+        }
+        .radio-mark:after {
+            content: "";
+            position: absolute;
+            display: none;
+        }
+        .custom-radio input:checked ~ .radio-mark:after {
+            display: block;
+        }
+        .custom-radio .radio-mark:after {
+            top: 3px;
+            left: 3px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #4f46e5;
+        }
+        .tab-active {
+            color: #4f46e5;
+            border-bottom: 2px solid #4f46e5;
+        }
+        .code-highlight {
+            background-color: rgba(79, 70, 229, 0.1);
+            border-left: 3px solid #4f46e5;
+        }
+        .dom-node {
+            transition: all 0.3s ease;
+        }
+        .dom-node:hover {
+            filter: brightness(1.1);
+        }
+        .dom-node.selected {
+            box-shadow: 0 0 0 2px #4f46e5;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Barra de Progresso -->
+    <div class="fixed top-0 left-0 right-0 h-1 z-50">
+        <div id="progress-bar" class="progress-bar h-full bg-primary w-0"></div>
+    </div>
+
+    <!-- Cabeçalho e Navegação -->
+    <header class="bg-white shadow-sm sticky top-0 z-40">
+        <div class="container mx-auto px-4 py-4 flex flex-col md:flex-row items-center justify-between">
+            <div class="flex items-center mb-4 md:mb-0">
+                <h1 class="text-2xl font-bold text-gray-900">Entendendo o DOM JavaScript</h1>
+            </div>
+            <nav class="flex space-x-1 overflow-x-auto pb-1 w-full md:w-auto">
+                <button class="px-4 py-2 text-sm font-medium text-gray-700 hover:text-primary whitespace-nowrap tab-active" data-section="intro">Introdução</button>
+                <button class="px-4 py-2 text-sm font-medium text-gray-700 hover:text-primary whitespace-nowrap" data-section="structure">Estrutura</button>
+                <button class="px-4 py-2 text-sm font-medium text-gray-700 hover:text-primary whitespace-nowrap" data-section="selection">Seleção</button>
+                <button class="px-4 py-2 text-sm font-medium text-gray-700 hover:text-primary whitespace-nowrap" data-section="manipulation">Manipulação</button>
+                <button class="px-4 py-2 text-sm font-medium text-gray-700 hover:text-primary whitespace-nowrap" data-section="events">Eventos</button>
+                <button class="px-4 py-2 text-sm font-medium text-gray-700 hover:text-primary whitespace-nowrap" data-section="challenges">Desafios</button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Seção Hero -->
+    <section id="hero" class="relative py-16 md:py-24 overflow-hidden">
+        <div class="absolute inset-0 bg-gradient-to-r from-white via-white to-transparent z-10"></div>
+        <div style="background-image: url('https://readdy.ai/api/search-image?query=modern%20abstract%20visualization%20of%20DOM%20tree%20structure%20with%20nodes%20and%20connections%2C%20clean%20minimalist%20design%2C%20light%20blue%20and%20purple%20gradient%2C%20tech%20illustration%2C%20showing%20HTML%20document%20structure%20as%20interconnected%20nodes%2C%20professional%20educational%20diagram&width=1200&height=600&seq=1&orientation=landscape'); background-position: right center; background-size: cover; background-repeat: no-repeat;" class="absolute inset-0"></div>
+        <div class="container mx-auto px-4 relative z-20">
+            <div class="max-w-2xl">
+                <h2 class="text-4xl md:text-5xl font-bold text-gray-900 mb-6">Aprenda a manipular o DOM com JavaScript</h2>
+                <p class="text-lg text-gray-700 mb-8">O Document Object Model (DOM) é a representação em árvore de todos os elementos HTML da sua página. Domine a manipulação do DOM e transforme suas páginas web em experiências interativas e dinâmicas.</p>
+                <div class="flex flex-wrap gap-4">
+                    <button id="start-learning" class="bg-primary hover:bg-primary/90 text-white font-medium py-3 px-6 rounded-button shadow-sm flex items-center !rounded-button whitespace-nowrap">
+                        <span class="w-5 h-5 flex items-center justify-center mr-2"><i class="ri-play-line"></i></span>
+                        Começar a Aprender
+                    </button>
+                    <button class="bg-white hover:bg-gray-50 text-gray-800 font-medium py-3 px-6 border border-gray-300 rounded-button shadow-sm flex items-center !rounded-button whitespace-nowrap">
+                        <span class="w-5 h-5 flex items-center justify-center mr-2"><i class="ri-github-line"></i></span>
+                        Ver Código-fonte
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Conteúdo Principal -->
+    <main class="container mx-auto px-4 py-12">
+        <!-- Seção de Introdução -->
+        <section id="intro" class="mb-16 section-content active">
+            <div class="max-w-4xl mx-auto">
+                <h2 class="text-3xl font-bold text-gray-900 mb-6">O que é o DOM?</h2>
+                <p class="text-lg text-gray-700 mb-8">O Document Object Model (DOM) é uma interface de programação para documentos HTML e XML. Ele representa a estrutura de um documento como uma árvore de objetos, onde cada nó é um objeto representando uma parte do documento.</p>
+                
+                <div class="bg-white p-6 rounded-lg shadow-sm mb-8">
+                    <h3 class="text-xl font-semibold text-gray-900 mb-4">Visualização da Árvore DOM</h3>
+                    <div id="dom-tree-visualization" class="border border-gray-200 rounded-lg p-4 mb-4 h-96 overflow-auto">
+                        <div class="dom-node bg-gray-100 p-4 rounded-md mb-2">
+                            <div class="flex items-center mb-2">
+                                <span class="w-6 h-6 flex items-center justify-center bg-primary/10 text-primary rounded-full mr-2"><i class="ri-html5-line"></i></span>
+                                <span class="font-medium">document</span>
+                            </div>
+                            <div class="pl-8">
+                                <div class="dom-node bg-gray-100 p-3 rounded-md mb-2">
+                                    <div class="flex items-center">
+                                        <span class="w-5 h-5 flex items-center justify-center bg-primary/10 text-primary rounded-full mr-2"><i class="ri-layout-line"></i></span>
+                                        <span class="font-medium">html</span>
+                                    </div>
+                                    <div class="pl-6">
+                                        <div class="dom-node bg-gray-100 p-2 rounded-md mb-2">
+                                            <div class="flex items-center">
+                                                <span class="w-4 h-4 flex items-center justify-center bg-primary/10 text-primary rounded-full mr-2"><i class="ri-code-line"></i></span>
+                                                <span class="font-medium">head</span>
+                                            </div>
+                                            <div class="pl-5">
+                                                <div class="dom-node bg-gray-100 p-2 rounded-md mb-1">
+                                                    <div class="flex items-center">
+                                                        <span class="w-4 h-4 flex items-center justify-center bg-primary/10 text-primary rounded-full mr-2"><i class="ri-text"></i></span>
+                                                        <span>title</span>
+                                                    </div>
+                                                </div>
+                                                <div class="dom-node bg-gray-100 p-2 rounded-md">
+                                                    <div class="flex items-center">
+                                                        <span class="w-4 h-4 flex items-center justify-center bg-primary/10 text-primary rounded-full mr-2"><i class="ri-link"></i></span>
+                                                        <span>meta</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="dom-node bg-gray-100 p-2 rounded-md">
+                                            <div class="flex items-center">
+                                                <span class="w-4 h-4 flex items-center justify-center bg-primary/10 text-primary rounded-full mr-2"><i class="ri-layout-line"></i></span>
+                                                <span class="font-medium">body</span>
+                                            </div>
+                                            <div class="pl-5">
+                                                <div class="dom-node bg-gray-100 p-2 rounded-md mb-1">
+                                                    <div class="flex items-center">
+                                                        <span class="w-4 h-4 flex items-center justify-center bg-primary/10 text-primary rounded-full mr-2"><i class="ri-layout-top-line"></i></span>
+                                                        <span>header</span>
+                                                    </div>
+                                                </div>
+                                                <div class="dom-node bg-gray-100 p-2 rounded-md mb-1">
+                                                    <div class="flex items-center">
+                                                        <span class="w-4 h-4 flex items-center justify-center bg-primary/10 text-primary rounded-full mr-2"><i class="ri-layout-right-line"></i></span>
+                                                        <span>main</span>
+                                                    </div>
+                                                    <div class="pl-4">
+                                                        <div class="dom-node bg-gray-100 p-1 rounded-md mb-1">
+                                                            <div class="flex items-center">
+                                                                <span class="w-4 h-4 flex items-center justify-center bg-primary/10 text-primary rounded-full mr-2"><i class="ri-paragraph"></i></span>
+                                                                <span>p</span>
+                                                            </div>
+                                                        </div>
+                                                        <div class="dom-node bg-gray-100 p-1 rounded-md mb-1 hover:bg-primary/10 cursor-pointer" id="clickable-button">
+                                                            <div class="flex items-center">
+                                                                <span class="w-4 h-4 flex items-center justify-center bg-primary/10 text-primary rounded-full mr-2"><i class="ri-cursor-line"></i></span>
+                                                                <span>button</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="dom-node bg-gray-100 p-2 rounded-md">
+                                                    <div class="flex items-center">
+                                                        <span class="w-4 h-4 flex items-center justify-center bg-primary/10 text-primary rounded-full mr-2"><i class="ri-layout-bottom-line"></i></span>
+                                                        <span>footer</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-100 p-4 rounded-md">
+                        <p class="text-sm text-gray-700 mb-2"><span class="font-medium">Experimente:</span> Clique nos elementos da árvore para ver como eles são selecionados no DOM.</p>
+                        <div id="dom-interaction-result" class="text-sm bg-white p-3 rounded border border-gray-200 min-h-12">
+                            <p class="text-gray-500">Os resultados da interação aparecerão aqui...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid md:grid-cols-2 gap-8 mb-8">
+                    <div class="bg-white p-6 rounded-lg shadow-sm">
+                        <div class="w-12 h-12 flex items-center justify-center bg-primary/10 text-primary rounded-full mb-4">
+                            <i class="ri-code-line ri-xl"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold text-gray-900 mb-2">Estrutura em Árvore</h3>
+                        <p class="text-gray-700">O DOM organiza todos os elementos HTML em uma estrutura hierárquica de árvore, onde cada elemento é um nó. Isso permite que você navegue facilmente entre elementos pais, filhos e irmãos.</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow-sm">
+                        <div class="w-12 h-12 flex items-center justify-center bg-primary/10 text-primary rounded-full mb-4">
+                            <i class="ri-tools-line ri-xl"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold text-gray-900 mb-2">Manipulação Dinâmica</h3>
+                        <p class="text-gray-700">Com JavaScript, você pode acessar e modificar qualquer elemento do DOM em tempo real, alterando conteúdo, estilos, atributos e até mesmo criando ou removendo elementos.</p>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-lg shadow-sm mb-8">
+                    <h3 class="text-xl font-semibold text-gray-900 mb-4">Seu Primeiro Script DOM</h3>
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div>
+                            <div class="bg-gray-100 p-3 rounded-md mb-3">
+                                <p class="text-sm font-medium text-gray-700 mb-1">Código JavaScript:</p>
+                                <div class="code-editor bg-gray-800 text-white p-4 rounded-md text-sm font-mono overflow-x-auto">
+<pre id="intro-code">// Seleciona um elemento pelo ID
+const titulo = document.getElementById('titulo');
+
+// Altera o conteúdo do elemento
+titulo.textContent = 'DOM Modificado!';
+
+// Altera o estilo do elemento
+titulo.style.color = '#4f46e5';
+titulo.style.fontWeight = 'bold';</pre>
+                                </div>
+                            </div>
+                            <button id="run-intro-code" class="bg-primary hover:bg-primary/90 text-white font-medium py-2 px-4 rounded-button shadow-sm flex items-center !rounded-button whitespace-nowrap">
+                                <span class="w-5 h-5 flex items-center justify-center mr-1"><i class="ri-play-line"></i></span>
+                                Executar Código
+                            </button>
+                        </div>
+                        <div>
+                            <div class="bg-gray-100 p-3 rounded-md mb-3">
+                                <p class="text-sm font-medium text-gray-700 mb-1">Resultado:</p>
+                                <div id="intro-result" class="bg-white p-4 rounded-md border border-gray-200 min-h-40">
+                                    <h2 id="titulo" class="text-xl mb-3">Título Original</h2>
+                                    <p>Este é um exemplo de como o DOM permite modificar elementos HTML dinamicamente com JavaScript.</p>
+                                </div>
+                            </div>
+                            <button id="reset-intro" class="border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium py-2 px-4 rounded-button shadow-sm flex items-center !rounded-button whitespace-nowrap">
+                                <span class="w-5 h-5 flex items-center justify-center mr-1"><i class="ri-refresh-line"></i></span>
+                                Reiniciar Exemplo
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Seção de Estrutura -->
+        <section id="structure" class="mb-16 section-content hidden">
+            <div class="max-w-4xl mx-auto">
+                <h2 class="text-3xl font-bold text-gray-900 mb-6">Estrutura do DOM</h2>
+                <p class="text-lg text-gray-700 mb-8">O DOM representa um documento HTML como uma árvore hierárquica. Cada elemento, atributo e texto no HTML se torna um nó no DOM com relacionamentos específicos entre si.</p>
+                
+                <div class="bg-white p-6 rounded-lg shadow-sm mb-8">
+                    <h3 class="text-xl font-semibold text-gray-900 mb-4">Tipos de Nós no DOM</h3>
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div>
+                            <ul class="space-y-3">
+                                <li class="flex items-start">
+                                    <span class="w-6 h-6 flex items-center justify-center bg-primary/10 text-primary rounded-full mt-0.5 mr-2 flex-shrink-0"><i class="ri-file-list-line"></i></span>
+                                    <div>
+                                        <span class="font-medium">Document:</span>
+                                        <p class="text-sm text-gray-600">O nó raiz que representa todo o documento HTML.</p>
+                                    </div>
+                                </li>
+                                <li class="flex items-start">
+                                    <span class="w-6 h-6 flex items-center justify-center bg-primary/10 text-primary rounded-full mt-0.5 mr-2 flex-shrink-0"><i class="ri-layout-line"></i></span>
+                                    <div>
+                                        <span class="font-medium">Element:</span>
+                                        <p class="text-sm text-gray-600">Representa elementos HTML como &lt;div&gt;, &lt;p&gt;, &lt;a&gt;, etc.</p>
+                                    </div>
+                                </li>
+                                <li class="flex items-start">
+                                    <span class="w-6 h-6 flex items-center justify-center bg-primary/10 text-primary rounded-full mt-0.5 mr-2 flex-shrink-0"><i class="ri-text"></i></span>
+                                    <div>
+                                        <span class="font-medium">Text:</span>
+                                        <p class="text-sm text-gray-600">O conteúdo textual dentro de um elemento.</p>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                        <div>
+                            <ul class="space-y-3">
+                                <li class="flex items-start">
+                                    <span class="w-6 h-6 flex items-center justify-center bg-primary/10 text-primary rounded-full mt-0.5 mr-2 flex-shrink-0"><i class="ri-price-tag-3-line"></i></span>
+                                    <div>
+                                        <span class="font-medium">Attribute:</span>
+                                        <p class="text-sm text-gray-600">Representa atributos de elementos HTML (id, class, etc).</p>
+                                    </div>
+                                </li>
+                                <li class="flex items-start">
+                                    <span class="w-6 h-6 flex items-center justify-center bg-primary/10 text-primary rounded-full mt-0.5 mr-2 flex-shrink-0"><i class="ri-chat-1-line"></i></span>
+                                    <div>
+                                        <span class="font-medium">Comment:</span>
+                                        <p class="text-sm text-gray-600">Comentários HTML que não são exibidos na página.</p>
+                                    </div>
+                                </li>
+                                <li class="flex items-start">
+                                    <span class="w-6 h-6 flex items-center justify-center bg-primary/10 text-primary rounded-full mt-0.5 mr-2 flex-shrink-0"><i class="ri-file-copy-line"></i></span>
+                                    <div>
+                                        <span class="font-medium">DocumentFragment:</span>
+                                        <p class="text-sm text-gray-600">Um contêiner leve para armazenar nós temporariamente.</p>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-lg shadow-sm mb-8">
+                    <h3 class="text-xl font-semibold text-gray-900 mb-4">Navegando pelo DOM</h3>
+                    <p class="text-gray-700 mb-4">O JavaScript fornece várias propriedades para navegar entre os nós do DOM:</p>
+                    
+                    <div class="grid md:grid-cols-2 gap-6 mb-6">
+                        <div>
+                            <div class="bg-gray-100 p-3 rounded-md mb-3">
+                                <p class="text-sm font-medium text-gray-700 mb-1">Código JavaScript:</p>
+                                <div class="code-editor bg-gray-800 text-white p-4 rounded-md text-sm font-mono overflow-x-auto">
+<pre id="navigation-code">// Seleciona o elemento pai
+const lista = document.getElementById('lista');
+
+// Acessa o primeiro filho
+const primeiroItem = lista.firstElementChild;
+primeiroItem.style.color = '#4f46e5';
+
+// Acessa o próximo irmão
+const segundoItem = primeiroItem.nextElementSibling;
+segundoItem.style.fontWeight = 'bold';
+
+// Acessa o elemento pai
+const pai = segundoItem.parentElement;
+pai.style.backgroundColor = '#f3f4f6';</pre>
+                                </div>
+                            </div>
+                            <button id="run-navigation-code" class="bg-primary hover:bg-primary/90 text-white font-medium py-2 px-4 rounded-button shadow-sm flex items-center !rounded-button whitespace-nowrap">
+                                <span class="w-5 h-5 flex items-center justify-center mr-1"><i class="ri-play-line"></i></span>
+                                Executar Código
+                            </button>
+                        </div>
+                        <div>
+                            <div class="bg-gray-100 p-3 rounded-md mb-3">
+                                <p class="text-sm font-medium text-gray-700 mb-1">Resultado:</p>
+                                <div id="navigation-result" class="bg-white p-4 rounded-md border border-gray-200 min-h-40">
+                                    <ul id="lista">
+                                        <li>Primeiro item da lista</li>
+                                        <li>Segundo item da lista</li>
+                                        <li>Terceiro item da lista</li>
+                                        <li>Quarto item da lista</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <button id="reset-navigation" class="border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium py-2 px-4 rounded-button shadow-sm flex items-center !rounded-button whitespace-nowrap">
+                                <span class="w-5 h-5 flex items-center justify-center mr-1"><i class="ri-refresh-line"></i></span>
+                                Reiniciar Exemplo
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-primary/5 p-4 rounded-md">
+                        <h4 class="font-medium text-gray-900 mb-2">Propriedades de Navegação</h4>
+                        <div class="grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                                <ul class="space-y-1">
+                                    <li><code class="bg-gray-100 px-1 py-0.5 rounded text-primary">parentNode</code> - Nó pai</li>
+                                    <li><code class="bg-gray-100 px-1 py-0.5 rounded text-primary">childNodes</code> - Todos os nós filhos</li>
+                                    <li><code class="bg-gray-100 px-1 py-0.5 rounded text-primary">firstChild</code> - Primeiro nó filho</li>
+                                    <li><code class="bg-gray-100 px-1 py-0.5 rounded text-primary">lastChild</code> - Último nó filho</li>
+                                </ul>
+                            </div>
+                            <div>
+                                <ul class="space-y-1">
+                                    <li><code class="bg-gray-100 px-1 py-0.5 rounded text-primary">nextSibling</code> - Próximo nó irmão</li>
+                                    <li><code class="bg-gray-100 px-1 py-0.5 rounded text-primary">previousSibling</code> - Nó irmão anterior</li>
+                                    <li><code class="bg-gray-100 px-1 py-0.5 rounded text-primary">children</code> - Elementos filhos</li>
+                                    <li><code class="bg-gray-100 px-1 py-0.5 rounded text-primary">parentElement</code> - Elemento pai</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-lg shadow-sm">
+                    <h3 class="text-xl font-semibold text-gray-900 mb-4">Experimente: Navegação Interativa</h3>
+                    <div class="bg-gray-100 p-4 rounded-md mb-4">
+                        <div id="interactive-dom" class="bg-white p-4 rounded-md border border-gray-200">
+                            <div id="parent" class="p-4 border border-gray-300 rounded-md">
+                                <h4 class="font-medium mb-2">Elemento Pai</h4>
+                                <div id="child1" class="p-3 border border-gray-300 rounded-md mb-2">
+                                    <p>Filho 1</p>
+                                </div>
+                                <div id="child2" class="p-3 border border-gray-300 rounded-md mb-2">
+                                    <p>Filho 2</p>
+                                </div>
+                                <div id="child3" class="p-3 border border-gray-300 rounded-md">
+                                    <p>Filho 3</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap gap-2 mb-4">
+                        <button id="highlight-parent" class="bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm py-1.5 px-3 rounded-button !rounded-button whitespace-nowrap">Destacar Pai</button>
+                        <button id="highlight-children" class="bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm py-1.5 px-3 rounded-button !rounded-button whitespace-nowrap">Destacar Filhos</button>
+                        <button id="highlight-first-child" class="bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm py-1.5 px-3 rounded-button !rounded-button whitespace-nowrap">Primeiro Filho</button>
+                        <button id="highlight-last-child" class="bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm py-1.5 px-3 rounded-button !rounded-button whitespace-nowrap">Último Filho</button>
+                        <button id="highlight-siblings" class="bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm py-1.5 px-3 rounded-button !rounded-button whitespace-nowrap">Irmãos do Filho 2</button>
+                    </div>
+                    <div id="navigation-info" class="text-sm bg-gray-100 p-3 rounded-md">
+                        <p class="text-gray-700">Clique nos botões acima para ver como navegar entre os elementos do DOM.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Seção de Seleção -->
+        <section id="selection" class="mb-16 section-content hidden">
+            <div class="max-w-4xl mx-auto">
+                <h2 class="text-3xl font-bold text-gray-900 mb-6">Seleção de Elementos</h2>
+                <p class="text-lg text-gray-700 mb-8">Para manipular elementos do DOM, primeiro precisamos selecioná-los. JavaScript oferece vários métodos para selecionar elementos de diferentes maneiras.</p>
+                
+                <div class="bg-white p-6 rounded-lg shadow-sm mb-8">
+                    <h3 class="text-xl font-semibold text-gray-900 mb-4">Métodos de Seleção</h3>
+                    <div class="grid md:grid-cols-2 gap-6 mb-6">
+                        <div>
+                            <div class="bg-gray-100 p-4 rounded-md">
+                                <h4 class="font-medium text-gray-900 mb-2">Seleção por ID</h4>
+                                <div class="code-editor bg-gray-800 text-white p-3 rounded-md text-sm font-mono overflow-x-auto mb-2">
+                                    <pre>document.getElementById('meuId')</pre>
+                                </div>
+                                <p class="text-sm text-gray-600">Seleciona um único elemento pelo atributo ID.</p>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="bg-gray-100 p-4 rounded-md">
+                                <h4 class="font-medium text-gray-900 mb-2">Seleção por Classe</h4>
+                                <div class="code-editor bg-gray-800 text-white p-3 rounded-md text-sm font-mono overflow-x-auto mb-2">
+                                    <pre>document.getElementsByClassName('minhaClasse')</pre>
+                                </div>
+                                <p class="text-sm text-gray-600">Retorna uma coleção de elementos com a classe especificada.</p>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="bg-gray-100 p-4 rounded-md">
+                                <h4 class="font-medium text-gray-900 mb-2">Seleção por Tag</h4>
+                                <div class="code-editor bg-gray-800 text-white p-3 rounded-md text-sm font-mono overflow-x-auto mb-2">
+                                    <pre>document.getElementsByTagName('div')</pre>
+                                </div>
+                                <p class="text-sm text-gray-600">Retorna uma coleção de elementos com a tag especificada.</p>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="bg-gray-100 p-4 rounded-md">
+                                <h4 class="font-medium text-gray-900 mb-2">Seleção por Seletor CSS</h4>
+                                <div class="code-editor bg-gray-800 text-white p-3 rounded-md text-sm font-mono overflow-x-auto mb-2">
+                                    <pre>document.querySelector('.classe > p')</pre>
+                                </div>
+                                <p class="text-sm text-gray-600">Seleciona o primeiro elemento que corresponde ao seletor CSS.</p>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="bg-gray-100 p-4 rounded-md">
+                                <h4 class="font-medium text-gray-900 mb-2">Seleção Múltipla por CSS</h4>
+                                <div class="code-editor bg-gray-800 text-white p-3 rounded-md text-sm font-mono overflow-x-auto mb-2">
+                                    <pre>document.querySelectorAll('ul li')</pre>
+                                </div>
+                                <p class="text-sm text-gray-600">Retorna todos os elementos que correspondem ao seletor CSS.</p>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="bg-gray-100 p-4 rounded-md">
+                                <h4 class="font-medium text-gray-900 mb-2">Seleção por Nome</h4>
+                                <div class="code-editor bg-gray-800 text-white p-3 rounded-md text-sm font-mono overflow-x-auto mb-2">
+                                    <pre>document.getElementsByName('nome')</pre>
+                                </div>
+                                <p class="text-sm text-gray-600">Retorna elementos com o atributo name especificado.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-lg shadow-sm mb-8">
+                    <h3 class="text-xl font-semibold text-gray-900 mb-4">Exemplo Prático de Seleção</h3>
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div>
+                            <div class="bg-gray-100 p-3 rounded-md mb-3">
+                                <p class="text-sm font-medium text-gray-700 mb-1">Código JavaScript:</p>
+                                <div class="code-editor bg-gray-800 text-white p-4 rounded-md text-sm font-mono overflow-x-auto">
+<pre id="selection-code">// Seleciona por ID
+const titulo = document.getElementById('titulo-selecao');
+titulo.style.color = '#4f46e5';
+// Seleciona todos os itens da lista
+const itens = document.querySelectorAll('#lista-selecao li');
+itens.forEach((item, index) => {
+  item.style.backgroundColor = index % 2 === 0 ? 
+    '#f3f4f6' : 'white';
+  item.style.padding = '8px';
+});
+
+// Seleciona apenas os itens com a classe 'destaque'
+const destaques = document.getElementsByClassName('destaque');
+for (let i = 0; i < destaques.length; i++) {
+  destaques[i].style.fontWeight = 'bold';
+  destaques[i].style.borderLeft = '3px solid #4f46e5';
+  destaques[i].style.paddingLeft = '10px';
+}</pre>
+                                </div>
+                            </div>
+                            <button id="run-selection-code" class="bg-primary hover:bg-primary/90 text-white font-medium py-2 px-4 rounded-button shadow-sm flex items-center !rounded-button whitespace-nowrap">
+                                <span class="w-5 h-5 flex items-center justify-center mr-1"><i class="ri-play-line"></i></span>
+                                Executar Código
+                            </button>
+                        </div>
+                        <div>
+                            <div class="bg-gray-100 p-3 rounded-md mb-3">
+                                <p class="text-sm font-medium text-gray-700 mb-1">Resultado:</p>
+                                <div id="selection-result" class="bg-white p-4 rounded-md border border-gray-200 min-h-40">
+                                    <h3 id="titulo-selecao" class="text-lg font-medium mb-3">Lista de Itens</h3>
+                                    <ul id="lista-selecao">
+                                        <li>Item normal</li>
+                                        <li class="destaque">Item com destaque</li>
+                                        <li>Item normal</li>
+                                        <li class="destaque">Item com destaque</li>
+                                        <li>Item normal</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <button id="reset-selection" class="border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium py-2 px-4 rounded-button shadow-sm flex items-center !rounded-button whitespace-nowrap">
+                                <span class="w-5 h-5 flex items-center justify-center mr-1"><i class="ri-refresh-line"></i></span>
+                                Reiniciar Exemplo
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-lg shadow-sm">
+                    <h3 class="text-xl font-semibold text-gray-900 mb-4">Playground de Seleção</h3>
+                    <p class="text-gray-700 mb-4">Experimente selecionar elementos usando diferentes métodos:</p>
+                    
+                    <div class="bg-gray-100 p-4 rounded-md mb-4">
+                        <div id="selection-playground" class="bg-white p-4 rounded-md border border-gray-200">
+                            <h4 id="playground-title" class="text-lg font-medium mb-3">Playground de Seleção</h4>
+                            <p class="mb-3">Selecione elementos desta área usando os controles abaixo.</p>
+                            <div class="mb-3">
+                                <div id="box1" class="box p-3 border border-gray-300 rounded-md mb-2">Caixa 1 (ID: box1)</div>
+                                <div id="box2" class="box destaque p-3 border border-gray-300 rounded-md mb-2">Caixa 2 (ID: box2, Classe: box destaque)</div>
+                                <div id="box3" class="box p-3 border border-gray-300 rounded-md">Caixa 3 (ID: box3, Classe: box)</div>
+                            </div>
+                            <ul id="playground-list">
+                                <li class="destaque">Item 1 (Classe: destaque)</li>
+                                <li>Item 2</li>
+                                <li class="destaque">Item 3 (Classe: destaque)</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="grid md:grid-cols-2 gap-6 mb-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Método de Seleção:</label>
+                            <div class="flex flex-wrap gap-2">
+                                <button class="selector-method bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm py-1.5 px-3 rounded-button !rounded-button whitespace-nowrap" data-method="getElementById">getElementById</button>
+                                <button class="selector-method bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm py-1.5 px-3 rounded-button !rounded-button whitespace-nowrap" data-method="getElementsByClassName">getElementsByClassName</button>
+                                <button class="selector-method bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm py-1.5 px-3 rounded-button !rounded-button whitespace-nowrap" data-method="getElementsByTagName">getElementsByTagName</button>
+                                <button class="selector-method bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm py-1.5 px-3 rounded-button !rounded-button whitespace-nowrap" data-method="querySelector">querySelector</button>
+                                <button class="selector-method bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm py-1.5 px-3 rounded-button !rounded-button whitespace-nowrap" data-method="querySelectorAll">querySelectorAll</button>
+                            </div>
+                        </div>
+                        <div>
+                            <label for="selector-value" class="block text-sm font-medium text-gray-700 mb-1">Valor do Seletor:</label>
+                            <div class="flex">
+                                <input type="text" id="selector-value" class="flex-1 border-gray-300 rounded-l-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary" placeholder="Ex: box1, .destaque, div">
+                                <button id="run-selector" class="bg-primary hover:bg-primary/90 text-white font-medium py-2 px-4 rounded-r-button shadow-sm !rounded-button whitespace-nowrap">Selecionar</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="selection-playground-result" class="text-sm bg-gray-100 p-3 rounded-md">
+                        <p class="text-gray-700">Os resultados da seleção aparecerão aqui...</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Seção de Manipulação -->
+        <section id="manipulation" class="mb-16 section-content hidden">
+            <div class="max-w-4xl mx-auto">
+                <h2 class="text-3xl font-bold text-gray-900 mb-6">Manipulação do DOM</h2>
+                <p class="text-lg text-gray-700 mb-8">Após selecionar elementos, podemos manipulá-los de diversas formas: alterar conteúdo, modificar estilos, adicionar ou remover elementos, e muito mais.</p>
+                
+                <div class="bg-white p-6 rounded-lg shadow-sm mb-8">
+                    <h3 class="text-xl font-semibold text-gray-900 mb-4">Manipulação de Conteúdo</h3>
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div>
+                            <div class="bg-gray-100 p-3 rounded-md mb-3">
+                                <p class="text-sm font-medium text-gray-700 mb-1">Código JavaScript:</p>
+                                <div class="code-editor bg-gray-800 text-white p-4 rounded-md text-sm font-mono overflow-x-auto">
+<pre id="content-code">// Alterar texto de um elemento
+document.getElementById('texto-simples').textContent = 
+  'Texto alterado com textContent!';
+// Alterar HTML de um elemento
+document.getElementById('texto-html').innerHTML = 
+  'Texto com <strong>formatação HTML</strong> usando innerHTML!';
+// Obter o valor de um input
+const valorInput = document.getElementById('meu-input').value;
+document.getElementById('valor-input').textContent = valorInput;
+// Alterar o valor de um input
+document.getElementById('meu-input').value = 'Novo valor!';</pre>
+                                </div>
+                            </div>
+                            <button id="run-content-code" class="bg-primary hover:bg-primary/90 text-white font-medium py-2 px-4 rounded-button shadow-sm flex items-center !rounded-button whitespace-nowrap">
+                                <span class="w-5 h-5 flex items-center justify-center mr-1"><i class="ri-play-line"></i></span>
+                                Executar Código
+                            </button>
+                        </div>
+                        <div>
+                            <div class="bg-gray-100 p-3 rounded-md mb-3">
+                                <p class="text-sm font-medium text-gray-700 mb-1">Resultado:</p>
+                                <div id="content-result" class="bg-white p-4 rounded-md border border-gray-200 min-h-40">
+                                    <p id="texto-simples" class="mb-2">Este é um texto simples.</p>
+                                    <p id="texto-html" class="mb-3">Este texto contém HTML.</p>
+                                    <div class="mb-3">
+                                        <input id="meu-input" type="text" value="Texto inicial" class="border border-gray-300 rounded px-3 py-1.5 w-full">
+                                    </div>
+                                    <p>Valor do input: <span id="valor-input">Texto inicial</span></p>
+                                </div>
+                            </div>
+                            <button id="reset-content" class="border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium py-2 px-4 rounded-button shadow-sm flex items-center !rounded-button whitespace-nowrap">
+                                <span class="w-5 h-5 flex items-center justify-center mr-1"><i class="ri-refresh-line"></i></span>
+                                Reiniciar Exemplo
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-lg shadow-sm mb-8">
+                    <h3 class="text-xl font-semibold text-gray-900 mb-4">Manipulação de Atributos e Estilos</h3>
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div>
+                            <div class="bg-gray-100 p-3 rounded-md mb-3">
+                                <p class="text-sm font-medium text-gray-700 mb-1">Código JavaScript:</p>
+                                <div class="code-editor bg-gray-800 text-white p-4 rounded-md text-sm font-mono overflow-x-auto">
+<pre id="attributes-code">// Manipular atributos
+const link = document.getElementById('meu-link');
+link.setAttribute('href', 'https://www.example.com');
+link.setAttribute('target', '_blank');
+
+// Manipular classes
+const elemento = document.getElementById('elemento-classes');
+elemento.classList.add('destaque');
+elemento.classList.remove('normal');
+elemento.classList.toggle('arredondado');
+
+// Manipular estilos diretamente
+const caixa = document.getElementById('caixa-estilo');
+caixa.style.backgroundColor = '#4f46e5';
+caixa.style.color = 'white';
+caixa.style.padding = '10px';
+caixa.style.borderRadius = '8px';</pre>
+                                </div>
+                            </div>
+                            <button id="run-attributes-code" class="bg-primary hover:bg-primary/90 text-white font-medium py-2 px-4 rounded-button shadow-sm flex items-center !rounded-button whitespace-nowrap">
+                                <span class="w-5 h-5 flex items-center justify-center mr-1"><i class="ri-play-line"></i></span>
+                                Executar Código
+                            </button>
+                        </div>
+                        <div>
+                            <div class="bg-gray-100 p-3 rounded-md mb-3">
+                                <p class="text-sm font-medium text-gray-700 mb-1">Resultado:</p>
+                                <div id="attributes-result" class="bg-white p-4 rounded-md border border-gray-200 min-h-40">
+                                    <p class="mb-3">
+                                        <a id="meu-link" href="#">Este é um link</a>
+                                    </p>
+                                    <div id="elemento-classes" class="normal border border-gray-300 p-2 mb-3">
+                                        Este elemento terá suas classes alteradas
+                                    </div>
+                                    <div id="caixa-estilo" class="border border-gray-300 p-2">
+                                        Esta caixa terá seu estilo alterado diretamente
+                                    </div>
+                                </div>
+                            </div>
+                            <button id="reset-attributes" class="border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium py-2 px-4 rounded-button shadow-sm flex items-center !rounded-button whitespace-nowrap">
+                                <span class="w-5 h-5 flex items-center justify-center mr-1"><i class="ri-refresh-line"></i></span>
+                                Reiniciar Exemplo
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-lg shadow-sm">
+                    <h3 class="text-xl font-semibold text-gray-900 mb-4">Criação e Remoção de Elementos</h3>
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div>
+                            <div class="bg-gray-100 p-3 rounded-md mb-3">
+                                <p class="text-sm font-medium text-gray-700 mb-1">Código JavaScript:</p>
+                                <div class="code-editor bg-gray-800 text-white p-4 rounded-md text-sm font-mono overflow-x-auto">
+<pre id="create-code">// Criar um novo elemento
+const novoParagrafo = document.createElement('p');
+novoParagrafo.textContent = 'Este parágrafo foi criado com JavaScript!';
+novoParagrafo.className = 'novo-elemento';
+novoParagrafo.style.color = '#4f46e5';
+
+// Adicionar o elemento ao DOM
+const container = document.getElementById('container-elementos');
+container.appendChild(novoParagrafo);
+
+// Criar e inserir um elemento antes de outro
+const novoItem = document.createElement('li');
+novoItem.textContent = 'Novo item no topo';
+novoItem.className = 'novo-elemento';
+const lista = document.getElementById('lista-elementos');
+lista.insertBefore(novoItem, lista.firstChild);
+
+// Remover um elemento
+const itemRemover = document.getElementById('item-remover');
+itemRemover.parentNode.removeChild(itemRemover);</pre>
+                                </div>
+                            </div>
+                            <button id="run-create-code" class="bg-primary hover:bg-primary/90 text-white font-medium py-2 px-4 rounded-button shadow-sm flex items-center !rounded-button whitespace-nowrap">
+                                <span class="w-5 h-5 flex items-center justify-center mr-1"><i class="ri-play-line"></i></span>
+                                Executar Código
+                            </button>
+                        </div>
+                        <div>
+                            <div class="bg-gray-100 p-3 rounded-md mb-3">
+                                <p class="text-sm font-medium text-gray-700 mb-1">Resultado:</p>
+                                <div id="create-result" class="bg-white p-4 rounded-md border border-gray-200 min-h-40">
+                                    <div id="container-elementos" class="mb-4 p-3 border border-gray-200 rounded-md">
+                                        <h4 class="text-sm font-medium mb-2">Container para novos elementos:</h4>
+                                    </div>
+                                    <div class="mb-4">
+                                        <h4 class="text-sm font-medium mb-2">Lista de elementos:</h4>
+                                        <ul id="lista-elementos">
+                                            <li>Item 1</li>
+                                            <li id="item-remover">Item para remover</li>
+                                            <li>Item 3</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            <button id="reset-create" class="border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium py-2 px-4 rounded-button shadow-sm flex items-center !rounded-button whitespace-nowrap">
+                                <span class="w-5 h-5 flex items-center justify-center mr-1"><i class="ri-refresh-line"></i></span>
+                                Reiniciar Exemplo
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Seção de Eventos -->
+        <section id="events" class="mb-16 section-content hidden">
+            <div class="max-w-4xl mx-auto">
+                <h2 class="text-3xl font-bold text-gray-900 mb-6">Eventos do DOM</h2>
+                <p class="text-lg text-gray-700 mb-8">Os eventos permitem que o JavaScript execute código quando algo acontece, como um clique, carregamento da página, ou entrada de dados.</p>
+                
+                <div class="bg-white p-6 rounded-lg shadow-sm mb-8">
+                    <h3 class="text-xl font-semibold text-gray-900 mb-4">Tipos de Eventos Comuns</h3>
+                    <div class="grid md:grid-cols-3 gap-4 mb-6">
+                        <div class="bg-gray-100 p-4 rounded-md">
+                            <h4 class="font-medium text-gray-900 mb-2">Eventos de Mouse</h4>
+                            <ul class="text-sm space-y-1">
+                                <li><code class="bg-white px-1 py-0.5 rounded text-primary">click</code> - Clique do mouse</li>
+                                <li><code class="bg-white px-1 py-0.5 rounded text-primary">dblclick</code> - Clique duplo</li>
+                                <li><code class="bg-white px-1 py-0.5 rounded text-primary">mouseover</code> - Mouse sobre</li>
+                                <li><code class="bg-white px-1 py-0.5 rounded text-primary">mouseout</code> - Mouse saiu</li>
+                                <li><code class="bg-white px-1 py-0.5 rounded text-primary">mousemove</code> - Mouse movendo</li>
+                            </ul>
+                        </div>
+                        <div class="bg-gray-100 p-4 rounded-md">
+                            <h4 class="font-medium text-gray-900 mb-2">Eventos de Teclado</h4>
+                            <ul class="text-sm space-y-1">
+                                <li><code class="bg-white px-1 py-0.5 rounded text-primary">keydown</code> - Tecla pressionada</li>
+                                <li><code class="bg-white px-1 py-0.5 rounded text-primary">keyup</code> - Tecla liberada</li>
+                                <li><code class="bg-white px-1 py-0.5 rounded text-primary">keypress</code> - Tecla pressionada (caractere)</li>
+                            </ul>
+                        </div>
+                        <div class="bg-gray-100 p-4 rounded-md">
+                            <h4 class="font-medium text-gray-900 mb-2">Eventos de Formulário</h4>
+                            <ul class="text-sm space-y-1">
+                                <li><code class="bg-white px-1 py-0.5 rounded text-primary">submit</code> - Envio de formulário</li>
+                                <li><code class="bg-white px-1 py-0.5 rounded text-primary">change</code> - Valor alterado</li>
+                                <li><code class="bg-white px-1 py-0.5 rounded text-primary">focus</code> - Elemento focado</li>
+                                <li><code class="bg-white px-1 py-0.5 rounded text-primary">blur</code> - Elemento perdeu foco</li>
+                                <li><code class="bg-white px-1 py-0.5 rounded text-primary">input</code> - Entrada de dados</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-lg shadow-sm mb-8">
+                    <h3 class="text-xl font-semibold text-gray-900 mb-4">Adicionando Event Listeners</h3>
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div>
+                            <div class="bg-gray-100 p-3 rounded-md mb-3">
+                                <p class="text-sm font-medium text-gray-700 mb-1">Código JavaScript:</p>
+                                <div class="code-editor bg-gray-800 text-white p-4 rounded-md text-sm font-mono overflow-x-auto">
+<pre id="events-code">// Método addEventListener
+const botao = document.getElementById('meu-botao');
+botao.addEventListener('click', function() {
+  document.getElementById('resultado-evento').textContent = 
+    'Botão clicado!';
+  this.style.backgroundColor = '#4f46e5';
+  this.style.color = 'white';
+});
+
+// Evento de mouse
+const caixa = document.getElementById('caixa-hover');
+caixa.addEventListener('mouseover', function() {
+  this.style.backgroundColor = '#f3f4f6';
+  this.style.transform = 'scale(1.05)';
+});
+caixa.addEventListener('mouseout', function() {
+  this.style.backgroundColor = 'white';
+  this.style.transform = 'scale(1)';
+});
+
+// Evento de teclado
+const input = document.getElementById('input-teclado');
+input.addEventListener('keyup', function(event) {
+  document.getElementById('tecla-pressionada').textContent = 
+    `Tecla: ${event.key}, Código: ${event.keyCode}`;
+});</pre>
+                                </div>
+                            </div>
+                            <button id="run-events-code" class="bg-primary hover:bg-primary/90 text-white font-medium py-2 px-4 rounded-button shadow-sm flex items-center !rounded-button whitespace-nowrap">
+                                <span class="w-5 h-5 flex items-center justify-center mr-1"><i class="ri-play-line"></i></span>
+                                Executar Código
+                            </button>
+                        </div>
+                        <div>
+                            <div class="bg-gray-100 p-3 rounded-md mb-3">
+                                <p class="text-sm font-medium text-gray-700 mb-1">Resultado:</p>
+                                <div id="events-result" class="bg-white p-4 rounded-md border border-gray-200 min-h-40">
+                                    <button id="meu-botao" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-button mb-4 !rounded-button whitespace-nowrap">Clique em Mim</button>
+                                    <p id="resultado-evento" class="mb-4 text-sm">Resultado do evento aparecerá aqui.</p>
+                                    
+                                    <div id="caixa-hover" class="border border-gray-300 p-3 rounded-md mb-4 transition-all duration-300">
+                                        Passe o mouse sobre esta caixa
+                                    </div>
+                                    
+                                    <div class="mb-2">
+                                        <label for="input-teclado" class="block text-sm font-medium text-gray-700 mb-1">Digite algo:</label>
+                                        <input id="input-teclado" type="text" class="border border-gray-300 rounded px-3 py-1.5 w-full">
+                                    </div>
+                                    <p id="tecla-pressionada" class="text-sm">Informações da tecla aparecerão aqui.</p>
+                                </div>
+                            </div>
+                            <button id="reset-events" class="border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium py-2 px-4 rounded-button shadow-sm flex items-center !rounded-button whitespace-nowrap">
+                                <span class="w-5 h-5 flex items-center justify-center mr-1"><i class="ri-refresh-line"></i></span>
+                                Reiniciar Exemplo
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-lg shadow-sm">
+                    <h3 class="text-xl font-semibold text-gray-900 mb-4">Propagação de Eventos</h3>
+                    <p class="text-gray-700 mb-4">Os eventos no DOM se propagam de duas formas: captura (do documento para o elemento) e borbulhamento (do elemento para o documento).</p>
+                    
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div>
+                            <div class="bg-gray-100 p-3 rounded-md mb-3">
+                                <p class="text-sm font-medium text-gray-700 mb-1">Código JavaScript:</p>
+                                <div class="code-editor bg-gray-800 text-white p-4 rounded-md text-sm font-mono overflow-x-auto">
+<pre id="propagation-code">// Adicionar eventos aos elementos aninhados
+document.getElementById('avo').addEventListener('click', function(e) {
+  addLog('Avô clicado (borbulhamento)');
+});
+
+document.getElementById('pai').addEventListener('click', function(e) {
+  addLog('Pai clicado (borbulhamento)');
+});
+
+document.getElementById('filho').addEventListener('click', function(e) {
+  addLog('Filho clicado (borbulhamento)');
+});
+
+// Evento com captura (terceiro parâmetro true)
+document.getElementById('avo').addEventListener('click', function(e) {
+  addLog('Avô clicado (captura)', 'blue');
+}, true);
+
+document.getElementById('pai').addEventListener('click', function(e) {
+  addLog('Pai clicado (captura)', 'blue');
+}, true);
+
+// Parar propagação
+document.getElementById('botao-parar').addEventListener('click', function(e) {
+  addLog('Propagação interrompida!', 'red');
+  e.stopPropagation();
+});
+
+// Função para adicionar log
+function addLog(message, color = 'black') {
+  const log = document.getElementById('event-log');
+  const entry = document.createElement('div');
+  entry.textContent = message;
+  entry.style.color = color;
+  log.appendChild(entry);
+  
+  // Limitar o número de entradas
+  if (log.children.length > 8) {
+    log.removeChild(log.firstChild);
+  }
+}</pre>
+                                </div>
+                            </div>
+                            <button id="run-propagation-code" class="bg-primary hover:bg-primary/90 text-white font-medium py-2 px-4 rounded-button shadow-sm flex items-center !rounded-button whitespace-nowrap">
+                                <span class="w-5 h-5 flex items-center justify-center mr-1"><i class="ri-play-line"></i></span>
+                                Executar Código
+                            </button>
+                        </div>
+                        <div>
+                            <div class="bg-gray-100 p-3 rounded-md mb-3">
+                                <p class="text-sm font-medium text-gray-700 mb-1">Resultado:</p>
+                                <div id="propagation-result" class="bg-white p-4 rounded-md border border-gray-200 min-h-40">
+                                    <div id="avo" class="border-2 border-gray-300 p-4 rounded-md bg-gray-50">
+                                        <p class="text-sm font-medium mb-2">Elemento Avô</p>
+                                        <div id="pai" class="border-2 border-gray-400 p-4 rounded-md bg-white">
+                                            <p class="text-sm font-medium mb-2">Elemento Pai</p>
+                                            <div id="filho" class="border-2 border-gray-500 p-3 rounded-md bg-gray-50">
+                                                <p class="text-sm font-medium mb-2">Elemento Filho</p>
+                                                <button id="botao-parar" class="bg-red-100 hover:bg-red-200 text-red-800 text-sm py-1 px-2 rounded-button !rounded-button whitespace-nowrap">Parar Propagação</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="mt-4">
+                                        <p class="text-sm font-medium mb-1">Log de Eventos:</p>
+                                        <div id="event-log" class="bg-gray-100 p-2 rounded-md text-sm h-32 overflow-y-auto"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <button id="reset-propagation" class="border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium py-2 px-4 rounded-button shadow-sm flex items-center !rounded-button whitespace-nowrap">
+                                <span class="w-5 h-5 flex items-center justify-center mr-1"><i class="ri-refresh-line"></i></span>
+                                Reiniciar Exemplo
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Seção de Desafios -->
+        <section id="challenges" class="mb-16 section-content hidden">
+            <div class="max-w-4xl mx-auto">
+                <h2 class="text-3xl font-bold text-gray-900 mb-6">Desafios Práticos</h2>
+                <p class="text-lg text-gray-700 mb-8">Coloque em prática o que aprendeu com estes desafios interativos. Tente resolver cada um deles para testar seu conhecimento sobre o DOM.</p>
+                
+                <div class="bg-white p-6 rounded-lg shadow-sm mb-8">
+                    <h3 class="text-xl font-semibold text-gray-900 mb-4">Desafio 1: Lista de Tarefas</h3>
+                    <p class="text-gray-700 mb-4">Crie uma aplicação simples de lista de tarefas que permita adicionar, marcar como concluída e remover tarefas.</p>
+                    
+                    <div class="bg-gray-100 p-4 rounded-md mb-4">
+                        <div id="todo-app" class="bg-white p-4 rounded-md border border-gray-200">
+                            <div class="mb-4">
+                                <div class="flex">
+                                    <input type="text" id="todo-input" placeholder="Adicionar nova tarefa..." class="flex-1 border border-gray-300 rounded-l-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary">
+                                    <button id="add-todo" class="bg-primary hover:bg-primary/90 text-white font-medium py-2 px-4 rounded-r-button !rounded-button whitespace-nowrap">Adicionar</button>
+                                </div>
+                            </div>
+                            <ul id="todo-list" class="space-y-2">
+                                <li class="flex items-center justify-between p-2 border border-gray-200 rounded-md">
+                                    <div class="flex items-center">
+                                        <label class="custom-checkbox flex items-center">
+                                            <input type="checkbox" class="todo-check">
+                                            <span class="checkmark"></span>
+                                            <span class="ml-6">Aprender sobre seleção de elementos</span>
+                                        </label>
+                                    </div>
+                                    <button class="delete-todo text-gray-400 hover:text-red-500">
+                                        <span class="w-6 h-6 flex items-center justify-center"><i class="ri-delete-bin-line"></i></span>
+                                    </button>
+                                </li>
+                                <li class="flex items-center justify-between p-2 border border-gray-200 rounded-md">
+                                    <div class="flex items-center">
+                                        <label class="custom-checkbox flex items-center">
+                                            <input type="checkbox" class="todo-check">
+                                            <span class="checkmark"></span>
+                                            <span class="ml-6">Praticar manipulação do DOM</span>
+                                        </label>
+                                    </div>
+                                    <button class="delete-todo text-gray-400 hover:text-red-500">
+                                        <span class="w-6 h-6 flex items-center justify-center"><i class="ri-delete-bin-line"></i></span>
+                                    </button>
+                                </li>
+                                <li class="flex items-center justify-between p-2 border border-gray-200 rounded-md">
+                                    <div class="flex items-center">
+                                        <label class="custom-checkbox flex items-center">
+                                            <input type="checkbox" class="todo-check">
+                                            <span class="checkmark"></span>
+                                            <span class="ml-6">Completar o desafio da lista de tarefas</span>
+                                        </label>
+                                    </div>
+                                    <button class="delete-todo text-gray-400 hover:text-red-500">
+                                        <span class="w-6 h-6 flex items-center justify-center"><i class="ri-delete-bin-line"></i></span>
+                                    </button>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-primary/5 p-4 rounded-md">
+                        <h4 class="font-medium text-gray-900 mb-2">Dicas para o Desafio:</h4>
+                        <ul class="list-disc pl-5 text-sm text-gray-700 space-y-1">
+                            <li>Use <code class="bg-white px-1 py-0.5 rounded text-primary">createElement()</code> para criar novos itens da lista</li>
+                            <li>Adicione event listeners para os botões de adicionar e remover</li>
+                            <li>Use <code class="bg-white px-1 py-0.5 rounded text-primary">appendChild()</code> para adicionar novos itens à lista</li>
+                            <li>Use <code class="bg-white px-1 py-0.5 rounded text-primary">removeChild()</code> para remover itens da lista</li>
+                            <li>Manipule classes CSS para marcar tarefas como concluídas</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-lg shadow-sm mb-8">
+                    <h3 class="text-xl font-semibold text-gray-900 mb-4">Desafio 2: Galeria de Imagens</h3>
+                    <p class="text-gray-700 mb-4">Crie uma galeria de imagens com miniaturas que, ao serem clicadas, exibem a imagem em tamanho maior.</p>
+                    
+                    <div class="bg-gray-100 p-4 rounded-md mb-4">
+                        <div id="gallery-app" class="bg-white p-4 rounded-md border border-gray-200">
+                            <div class="mb-4">
+                                <div id="main-image" class="w-full h-64 bg-gray-200 rounded-md flex items-center justify-center overflow-hidden">
+                                    <img src="https://readdy.ai/api/search-image?query=beautiful%20landscape%20with%20mountains%20and%20lake%2C%20high%20resolution%20nature%20photography%2C%20vibrant%20colors%2C%20serene%20atmosphere%2C%20perfect%20lighting%2C%20professional%20photography&width=800&height=400&seq=1&orientation=landscape" alt="Imagem principal" class="w-full h-full object-cover">
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-5 gap-2">
+                                <div class="thumbnail cursor-pointer rounded-md overflow-hidden border-2 border-primary">
+                                    <img src="https://readdy.ai/api/search-image?query=beautiful%20landscape%20with%20mountains%20and%20lake%2C%20high%20resolution%20nature%20photography%2C%20vibrant%20colors%2C%20serene%20atmosphere%2C%20perfect%20lighting%2C%20professional%20photography&width=150&height=100&seq=1&orientation=landscape" alt="Miniatura 1" class="w-full h-16 object-cover">
+                                </div>
+                                <div class="thumbnail cursor-pointer rounded-md overflow-hidden">
+                                    <img src="https://readdy.ai/api/search-image?query=coastal%20beach%20sunset%20with%20palm%20trees%2C%20golden%20hour%20photography%2C%20warm%20tones%2C%20tropical%20paradise%2C%20peaceful%20ocean%20waves%2C%20professional%20beach%20photography&width=150&height=100&seq=2&orientation=landscape" alt="Miniatura 2" class="w-full h-16 object-cover">
+                                </div>
+                                <div class="thumbnail cursor-pointer rounded-md overflow-hidden">
+                                    <img src="https://readdy.ai/api/search-image?query=dense%20forest%20with%20sunlight%20streaming%20through%20trees%2C%20mystical%20woodland%20scene%2C%20fog%20and%20mist%2C%20lush%20green%20vegetation%2C%20enchanted%20forest%20photography%2C%20high%20quality%20nature%20image&width=150&height=100&seq=3&orientation=landscape" alt="Miniatura 3" class="w-full h-16 object-cover">
+                                </div>
+                                <div class="thumbnail cursor-pointer rounded-md overflow-hidden">
+                                    <img src="https://readdy.ai/api/search-image?query=desert%20landscape%20with%20sand%20dunes%20at%20sunset%2C%20golden%20light%2C%20minimalist%20composition%2C%20dramatic%20shadows%2C%20arid%20beauty%2C%20professional%20desert%20photography&width=150&height=100&seq=4&orientation=landscape" alt="Miniatura 4" class="w-full h-16 object-cover">
+                                </div>
+                                <div class="thumbnail cursor-pointer rounded-md overflow-hidden">
+                                    <img src="https://readdy.ai/api/search-image?query=snowy%20mountain%20peaks%20with%20clear%20blue%20sky%2C%20winter%20wonderland%2C%20pristine%20snow%2C%20majestic%20alpine%20scenery%2C%20crisp%20high%20resolution%20photography&width=150&height=100&seq=5&orientation=landscape" alt="Miniatura 5" class="w-full h-16 object-cover">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-primary/5 p-4 rounded-md">
+                        <h4 class="font-medium text-gray-900 mb-2">Dicas para o Desafio:</h4>
+                        <ul class="list-disc pl-5 text-sm text-gray-700 space-y-1">
+                            <li>Adicione event listeners de clique a cada miniatura</li>
+                            <li>Atualize o src da imagem principal quando uma miniatura for clicada</li>
+                            <li>Adicione uma classe para destacar a miniatura selecionada</li>
+                            <li>Implemente transições suaves para melhorar a experiência do usuário</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-lg shadow-sm">
+                    <h3 class="text-xl font-semibold text-gray-900 mb-4">Desafio 3: Formulário com Validação</h3>
+                    <p class="text-gray-700 mb-4">Crie um formulário com validação em tempo real que verifica os campos à medida que o usuário digita.</p>
+                    
+                    <div class="bg-gray-100 p-4 rounded-md mb-4">
+                        <div id="form-app" class="bg-white p-4 rounded-md border border-gray-200">
+                            <form id="validation-form" class="space-y-4">
+                                <div>
+                                    <label for="username" class="block text-sm font-medium text-gray-700 mb-1">Nome de Usuário</label>
+                                    <input type="text" id="username" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary" placeholder="Mínimo 3 caracteres">
+                                    <p id="username-error" class="mt-1 text-sm text-red-600 hidden">Nome de usuário deve ter pelo menos 3 caracteres</p>
+                                </div>
+                                <div>
+                                    <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                                    <input type="email" id="email" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary" placeholder="exemplo@email.com">
+                                    <p id="email-error" class="mt-1 text-sm text-red-600 hidden">Email inválido</p>
+                                </div>
+                                <div>
+                                    <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Senha</label>
+                                    <input type="password" id="password" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary" placeholder="Mínimo 6 caracteres">
+                                    <p id="password-error" class="mt-1 text-sm text-red-600 hidden">A senha deve ter pelo menos 6 caracteres</p>
+                                </div>
+                                <div>
+                                    <label for="confirm-password" class="block text-sm font-medium text-gray-700 mb-1">Confirmar Senha</label>
+                                    <input type="password" id="confirm-password" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary" placeholder="Repita a senha">
+                                    <p id="confirm-password-error" class="mt-1 text-sm text-red-600 hidden">As senhas não coincidem</p>
+                                </div>
+                                <div>
+                                    <button type="submit" id="submit-form" class="w-full bg-primary hover:bg-primary/90 text-white font-medium py-2 px-4 rounded-button shadow-sm !rounded-button whitespace-nowrap" disabled>Cadastrar</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-primary/5 p-4 rounded-md">
+                        <h4 class="font-medium text-gray-900 mb-2">Dicas para o Desafio:</h4>
+                        <ul class="list-disc pl-5 text-sm text-gray-700 space-y-1">
+                            <li>Use o evento <code class="bg-white px-1 py-0.5 rounded text-primary">input</code> para validar os campos em tempo real</li>
+                            <li>Adicione ou remova classes para indicar campos válidos e inválidos</li>
+                            <li>Exiba mensagens de erro específicas para cada tipo de validação</li>
+                            <li>Habilite o botão de envio apenas quando todos os campos estiverem válidos</li>
+                            <li>Use expressões regulares para validar o formato do email</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+    <!-- Navegação entre Seções -->
+    <div class="container mx-auto px-4 mb-12">
+        <div class="max-w-4xl mx-auto flex justify-between">
+            <button id="prev-section" class="bg-white hover:bg-gray-50 text-gray-800 font-medium py-2 px-4 border border-gray-300 rounded-button shadow-sm flex items-center !rounded-button whitespace-nowrap">
+                <span class="w-5 h-5 flex items-center justify-center mr-1"><i class="ri-arrow-left-line"></i></span>
+                Seção Anterior
+            </button>
+            <button id="next-section" class="bg-primary hover:bg-primary/90 text-white font-medium py-2 px-4 rounded-button shadow-sm flex items-center !rounded-button whitespace-nowrap">
+                Próxima Seção
+                <span class="w-5 h-5 flex items-center justify-center ml-1"><i class="ri-arrow-right-line"></i></span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Rodapé -->
+    <footer class="bg-gray-900 text-white py-12">
+        <div class="container mx-auto px-4">
+            <div class="max-w-6xl mx-auto">
+                <div class="grid md:grid-cols-4 gap-8">
+                    <div>
+                        <h3 class="text-lg font-bold mb-4">Entendendo o DOM</h3>
+                        <p class="text-gray-400 text-sm">Um guia interativo para aprender a manipular o Document Object Model com JavaScript.</p>
+                    </div>
+                    <div>
+                        <h4 class="text-md font-bold mb-4">Recursos</h4>
+                        <ul class="space-y-2 text-sm text-gray-400">
+                            <li><a href="#" class="hover:text-white">Documentação MDN</a></li>
+                            <li><a href="#" class="hover:text-white">JavaScript.info</a></li>
+                            <li><a href="#" class="hover:text-white">W3Schools</a></li>
+                            <li><a href="#" class="hover:text-white">CodePen Examples</a></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 class="text-md font-bold mb-4">Glossário</h4>
+                        <ul class="space-y-2 text-sm text-gray-400">
+                            <li><a href="#" class="hover:text-white">Nós do DOM</a></li>
+                            <li><a href="#" class="hover:text-white">Eventos</a></li>
+                            <li><a href="#" class="hover:text-white">Manipulação</a></li>
+                            <li><a href="#" class="hover:text-white">Seletores</a></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 class="text-md font-bold mb-4">Contato</h4>
+                        <ul class="space-y-2 text-sm text-gray-400">
+                            <li class="flex items-center">
+                                <span class="w-5 h-5 flex items-center justify-center mr-2"><i class="ri-mail-line"></i></span>
+                                <a href="mailto:contato@domjavascript.com" class="hover:text-white">contato@domjavascript.com</a>
+                            </li>
+                            <li class="flex items-center">
+                                <span class="w-5 h-5 flex items-center justify-center mr-2"><i class="ri-github-line"></i></span>
+                                <a href="#" class="hover:text-white">GitHub</a>
+                            </li>
+                            <li class="flex items-center">
+                                <span class="w-5 h-5 flex items-center justify-center mr-2"><i class="ri-twitter-x-line"></i></span>
+                                <a href="#" class="hover:text-white">Twitter</a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="mt-8 pt-8 border-t border-gray-800 text-center text-sm text-gray-500">
+                    <p>© 2025 Entendendo o DOM JavaScript. Todos os direitos reservados.</p>
+                    <div class="mt-2">
+                        <a href="#" class="text-gray-500 hover:text-gray-400 mx-2">Termos de Uso</a>
+                        <a href="#" class="text-gray-500 hover:text-gray-400 mx-2">Política de Privacidade</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Botão Voltar ao Topo -->
+    <button id="back-to-top" class="fixed bottom-6 right-6 bg-primary hover:bg-primary/90 text-white w-12 h-12 rounded-full shadow-lg flex items-center justify-center opacity-0 invisible transition-all duration-300">
+        <span class="w-6 h-6 flex items-center justify-center"><i class="ri-arrow-up-line"></i></span>
+    </button>
+
+    <!-- Scripts -->
+    <script id="navigation-script">
+        document.addEventListener('DOMContentLoaded', function() {
+            const sections = ['intro', 'structure', 'selection', 'manipulation', 'events', 'challenges'];
+            let currentSectionIndex = 0;
+            
+            // Navegação entre seções
+            const navButtons = document.querySelectorAll('[data-section]');
+            const sectionContents = document.querySelectorAll('.section-content');
+            const prevButton = document.getElementById('prev-section');
+            const nextButton = document.getElementById('next-section');
+            
+            function showSection(index) {
+                // Esconde todas as seções
+                sectionContents.forEach(section => {
+                    section.classList.add('hidden');
+                    section.classList.remove('active');
+                });
+                
+                // Remove a classe ativa de todos os botões
+                navButtons.forEach(button => {
+                    button.classList.remove('tab-active');
+                });
+                
+                // Mostra a seção atual
+                const currentSection = document.getElementById(sections[index]);
+                currentSection.classList.remove('hidden');
+                currentSection.classList.add('active');
+                
+                // Marca o botão correspondente como ativo
+                navButtons[index].classList.add('tab-active');
+                
+                // Atualiza o índice atual
+                currentSectionIndex = index;
+                
+                // Atualiza o estado dos botões de navegação
+                prevButton.disabled = currentSectionIndex === 0;
+                prevButton.classList.toggle('opacity-50', currentSectionIndex === 0);
+                nextButton.disabled = currentSectionIndex === sections.length - 1;
+                nextButton.classList.toggle('opacity-50', currentSectionIndex === sections.length - 1);
+                
+                // Atualiza a barra de progresso
+                const progress = ((currentSectionIndex + 1) / sections.length) * 100;
+                document.getElementById('progress-bar').style.width = `${progress}%`;
+                
+                // Rola para o topo da seção
+                window.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                });
+            }
+            
+            // Adiciona eventos de clique aos botões de navegação
+            navButtons.forEach((button, index) => {
+                button.addEventListener('click', () => {
+                    showSection(index);
+                });
+            });
+            
+            // Botões anterior e próximo
+            prevButton.addEventListener('click', () => {
+                if (currentSectionIndex > 0) {
+                    showSection(currentSectionIndex - 1);
+                }
+            });
+            
+            nextButton.addEventListener('click', () => {
+                if (currentSectionIndex < sections.length - 1) {
+                    showSection(currentSectionIndex + 1);
+                }
+            });
+            
+            // Botão "Começar a Aprender"
+            document.getElementById('start-learning').addEventListener('click', () => {
+                showSection(0); // Mostra a seção de introdução
+            });
+            
+            // Inicializa a primeira seção
+            showSection(0);
+        });
+    </script>
+
+    <script id="scroll-script">
+        document.addEventListener('DOMContentLoaded', function() {
+            const backToTopButton = document.getElementById('back-to-top');
+            
+            // Mostra/esconde o botão "Voltar ao Topo" com base no scroll
+            window.addEventListener('scroll', () => {
+                if (window.scrollY > 300) {
+                    backToTopButton.classList.remove('opacity-0', 'invisible');
+                    backToTopButton.classList.add('opacity-100', 'visible');
+                } else {
+                    backToTopButton.classList.remove('opacity-100', 'visible');
+                    backToTopButton.classList.add('opacity-0', 'invisible');
+                }
+            });
+            
+            // Evento de clique no botão "Voltar ao Topo"
+            backToTopButton.addEventListener('click', () => {
+                window.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                });
+            });
+        });
+    </script>
+
+    <script id="intro-examples-script">
+        document.addEventListener('DOMContentLoaded', function() {
+            // Exemplo da Introdução
+            const runIntroCode = document.getElementById('run-intro-code');
+            const resetIntro = document.getElementById('reset-intro');
+            
+            runIntroCode.addEventListener('click', function() {
+                // Seleciona um elemento pelo ID
+                const titulo = document.getElementById('titulo');
+                
+                // Altera o conteúdo do elemento
+                titulo.textContent = 'DOM Modificado!';
+                
+                // Altera o estilo do elemento
+                titulo.style.color = '#4f46e5';
+                titulo.style.fontWeight = 'bold';
+            });
+            
+            resetIntro.addEventListener('click', function() {
+                const titulo = document.getElementById('titulo');
+                titulo.textContent = 'Título Original';
+                titulo.style.color = '';
+                titulo.style.fontWeight = '';
+            });
+            
+            // Interação com a árvore DOM
+            const clickableButton = document.getElementById('clickable-button');
+            const domInteractionResult = document.getElementById('dom-interaction-result');
+            
+            clickableButton.addEventListener('click', function() {
+                domInteractionResult.innerHTML = `
+                <div class="text-primary font-medium">Elemento selecionado:</div>
+                <code class="bg-gray-100 px-2 py-1 rounded block mt-1 mb-2">button</code>
+                <div class="text-sm">Este é um elemento do tipo botão que pode receber eventos de clique e outras interações do usuário.</div>
+                `;
+                
+                // Destaca o elemento clicado
+                document.querySelectorAll('.dom-node').forEach(node => {
+                    node.classList.remove('selected');
+                });
+                this.classList.add('selected');
+                this.classList.add('bg-primary/10');
+                
+                setTimeout(() => {
+                    this.classList.remove('bg-primary/10');
+                }, 500);
+            });
+            
+            // Adiciona interação a outros nós da árvore DOM
+            document.querySelectorAll('.dom-node').forEach(node => {
+                node.addEventListener('click', function(e) {
+                    if (this !== clickableButton.parentNode) {
+                        const nodeType = this.querySelector('span:last-child').textContent;
+                        
+                        domInteractionResult.innerHTML = `
+                        <div class="text-primary font-medium">Elemento selecionado:</div>
+                        <code class="bg-gray-100 px-2 py-1 rounded block mt-1 mb-2">${nodeType}</code>
+                        <div class="text-sm">Este é um elemento do tipo ${nodeType} na estrutura da árvore DOM.</div>
+                        `;
+                        
+                        // Destaca o elemento clicado
+                        document.querySelectorAll('.dom-node').forEach(n => {
+                            n.classList.remove('selected');
+                        });
+                        this.classList.add('selected');
+                        this.classList.add('bg-primary/10');
+                        
+                        setTimeout(() => {
+                            this.classList.remove('bg-primary/10');
+                        }, 500);
+                        
+                        e.stopPropagation();
+                    }
+                });
+            });
+        });
+    </script>
+
+    <script id="structure-examples-script">
+        document.addEventListener('DOMContentLoaded', function() {
+            // Exemplo de Navegação do DOM
+            const runNavigationCode = document.getElementById('run-navigation-code');
+            const resetNavigation = document.getElementById('reset-navigation');
+            
+            runNavigationCode.addEventListener('click', function() {
+                // Seleciona o elemento pai
+                const lista = document.getElementById('lista');
+                
+                // Acessa o primeiro filho
+                const primeiroItem = lista.firstElementChild;
+                primeiroItem.style.color = '#4f46e5';
+                
+                // Acessa o próximo irmão
+                const segundoItem = primeiroItem.nextElementSibling;
+                segundoItem.style.fontWeight = 'bold';
+                
+                // Acessa o elemento pai
+                const pai = segundoItem.parentElement;
+                pai.style.backgroundColor = '#f3f4f6';
+            });
+            
+            resetNavigation.addEventListener('click', function() {
+                const lista = document.getElementById('lista');
+                lista.style.backgroundColor = '';
+                
+                const itens = lista.children;
+                for (let i = 0; i < itens.length; i++) {
+                    itens[i].style.color = '';
+                    itens[i].style.fontWeight = '';
+                }
+            });
+            
+            // Exemplo de Navegação Interativa
+            const highlightParent = document.getElementById('highlight-parent');
+            const highlightChildren = document.getElementById('highlight-children');
+            const highlightFirstChild = document.getElementById('highlight-first-child');
+            const highlightLastChild = document.getElementById('highlight-last-child');
+            const highlightSiblings = document.getElementById('highlight-siblings');
+            const navigationInfo = document.getElementById('navigation-info');
+            
+            // Função para resetar os destaques
+            function resetHighlights() {
+                const elements = document.querySelectorAll('#interactive-dom div');
+                elements.forEach(el => {
+                    el.style.backgroundColor = '';
+                    el.style.borderColor = '';
+                });
+            }
+            
+            highlightParent.addEventListener('click', function() {
+                resetHighlights();
+                const parent = document.getElementById('parent');
+                parent.style.backgroundColor = 'rgba(79, 70, 229, 0.1)';
+                parent.style.borderColor = '#4f46e5';
+                
+                navigationInfo.innerHTML = `
+                <p class="text-primary font-medium">Elemento Pai Selecionado</p>
+                <code class="bg-white px-2 py-1 rounded block my-1">const pai = document.getElementById('parent');</code>
+                <p class="text-sm text-gray-700">O elemento pai contém todos os elementos filhos e serve como contêiner.</p>
+                `;
+            });
+            
+            highlightChildren.addEventListener('click', function() {
+                resetHighlights();
+                const children = document.querySelectorAll('#parent > div');
+                children.forEach(child => {
+                    child.style.backgroundColor = 'rgba(79, 70, 229, 0.1)';
+                    child.style.borderColor = '#4f46e5';
+                });
+                
+                navigationInfo.innerHTML = `
+                <p class="text-primary font-medium">Elementos Filhos Selecionados</p>
+                <code class="bg-white px-2 py-1 rounded block my-1">const filhos = document.getElementById('parent').children;</code>
+                <p class="text-sm text-gray-700">Os elementos filhos são os nós que estão diretamente dentro do elemento pai.</p>
+                `;
+            });
+            
+            highlightFirstChild.addEventListener('click', function() {
+                resetHighlights();
+                const firstChild = document.getElementById('child1');
+                firstChild.style.backgroundColor = 'rgba(79, 70, 229, 0.1)';
+                firstChild.style.borderColor = '#4f46e5';
+                
+                navigationInfo.innerHTML = `
+                <p class="text-primary font-medium">Primeiro Filho Selecionado</p>
+                <code class="bg-white px-2 py-1 rounded block my-1">const primeiroFilho = document.getElementById('parent').firstElementChild;</code>
+                <p class="text-sm text-gray-700">O primeiro filho é o primeiro elemento dentro do elemento pai.</p>
+                `;
+            });
+            
+            highlightLastChild.addEventListener('click', function() {
+                resetHighlights();
+                const lastChild = document.getElementById('child3');
+                lastChild.style.backgroundColor = 'rgba(79, 70, 229, 0.1)';
+                lastChild.style.borderColor = '#4f46e5';
+                
+                navigationInfo.innerHTML = `
+                <p class="text-primary font-medium">Último Filho Selecionado</p>
+                <code class="bg-white px-2 py-1 rounded block my-1">const ultimoFilho = document.getElementById('parent').lastElementChild;</code>
+                <p class="text-sm text-gray-700">O último filho é o último elemento dentro do elemento pai.</p>
+                `;
+            });
+            
+            highlightSiblings.addEventListener('click', function() {
+                resetHighlights();
+                const child1 = document.getElementById('child1');
+                const child3 = document.getElementById('child3');
+                child1.style.backgroundColor = 'rgba(79, 70, 229, 0.1)';
+                child3.style.backgroundColor = 'rgba(79, 70, 229, 0.1)';
+                child1.style.borderColor = '#4f46e5';
+                child3.style.borderColor = '#4f46e5';
+                
+                navigationInfo.innerHTML = `
+                <p class="text-primary font-medium">Irmãos do Filho 2 Selecionados</p>
+                <code class="bg-white px-2 py-1 rounded block my-1">const irmaoAnterior = document.getElementById('child2').previousElementSibling;</code>
+                <code class="bg-white px-2 py-1 rounded block my-1">const irmaoProximo = document.getElementById('child2').nextElementSibling;</code>
+                <p class="text-sm text-gray-700">Os irmãos são elementos que compartilham o mesmo pai.</p>
+                `;
+            });
+        });
+    </script>
+
+    <script id="selection-examples-script">
+        document.addEventListener('DOMContentLoaded', function() {
+            // Exemplo de Seleção
+            const runSelectionCode = document.getElementById('run-selection-code');
+            const resetSelection = document.getElementById('reset-selection');
+            
+            runSelectionCode.addEventListener('click', function() {
+                // Seleciona por ID
+                const titulo = document.getElementById('titulo-selecao');
+                titulo.style.color = '#4f46e5';
+                
+                // Seleciona todos os itens da lista
+                const itens = document.querySelectorAll('#lista-selecao li');
+                itens.forEach((item, index) => {
+                    item.style.backgroundColor = index % 2 === 0 ? '#f3f4f6' : 'white';
+                    item.style.padding = '8px';
+                });
+                
+                // Seleciona apenas os itens com a classe 'destaque'
+                const destaques = document.getElementsByClassName('destaque');
+                for (let i = 0; i < destaques.length; i++) {
+                    destaques[i].style.fontWeight = 'bold';
+                    destaques[i].style.borderLeft = '3px solid #4f46e5';
+                    destaques[i].style.paddingLeft = '10px';
+                }
+            });
+            
+            resetSelection.addEventListener('click', function() {
+                const titulo = document.getElementById('titulo-selecao');
+                titulo.style.color = '';
+                
+                const itens = document.querySelectorAll('#lista-selecao li');
+                itens.forEach(item => {
+                    item.style.backgroundColor = '';
+                    item.style.padding = '';
+                    item.style.fontWeight = '';
+                    item.style.borderLeft = '';
+                    item.style.paddingLeft = '';
+                });
+            });
+            
+            // Playground de Seleção
+            const selectorMethods = document.querySelectorAll('.selector-method');
+            const selectorValue = document.getElementById('selector-value');
+            const runSelector = document.getElementById('run-selector');
+            const selectionPlaygroundResult = document.getElementById('selection-playground-result');
+            
+            let currentMethod = 'getElementById';
+            
+            selectorMethods.forEach(method => {
+                method.addEventListener('click', function() {
+                    selectorMethods.forEach(m => m.classList.remove('bg-primary', 'text-white'));
+                    this.classList.add('bg-primary', 'text-white');
+                    currentMethod = this.dataset.method;
+                    
+                    // Atualiza o placeholder do input com base no método selecionado
+                    switch (currentMethod) {
+                        case 'getElementById':
+                            selectorValue.placeholder = 'Ex: box1';
+                            break;
+                        case 'getElementsByClassName':
+                            selectorValue.placeholder = 'Ex: destaque';
+                            break;
+                        case 'getElementsByTagName':
+                            selectorValue.placeholder = 'Ex: div';
+                            break;
+                        case 'querySelector':
+                            selectorValue.placeholder = 'Ex: .destaque, #box1';
+                            break;
+                        case 'querySelectorAll':
+                            selectorValue.placeholder = 'Ex: .box, li';
+                            break;
+                    }
+                });
+            });
+            
+            runSelector.addEventListener('click', function() {
+                // Reseta os destaques anteriores
+                const allElements = document.querySelectorAll('#selection-playground *');
+                allElements.forEach(el => {
+                    el.style.backgroundColor = '';
+                    el.style.outline = '';
+                });
+                
+                const value = selectorValue.value.trim();
+                if (!value) {
+                    selectionPlaygroundResult.innerHTML = `<p class="text-red-600">Por favor, insira um valor para o seletor.</p>`;
+                    return;
+                }
+                
+                try {
+                    let elements;
+                    let code;
+                    
+                    switch (currentMethod) {
+                        case 'getElementById':
+                            elements = [document.getElementById(value)];
+                            code = `document.getElementById('${value}')`;
+                            break;
+                        case 'getElementsByClassName':
+                            elements = document.getElementsByClassName(value);
+                            code = `document.getElementsByClassName('${value}')`;
+                            break;
+                        case 'getElementsByTagName':
+                            elements = document.getElementsByTagName(value);
+                            code = `document.getElementsByTagName('${value}')`;
+                            break;
+                        case 'querySelector':
+                            elements = [document.querySelector('#selection-playground ' + value)];
+                            code = `document.querySelector('${value}')`;
+                            break;
+                        case 'querySelectorAll':
+                            elements = document.querySelectorAll('#selection-playground ' + value);
+                            code = `document.querySelectorAll('${value}')`;
+                            break;
+                    }
+                    
+                    let count = 0;
+                    let elementsHTML = '';
+                    
+                    for (let i = 0; i < elements.length; i++) {
+                        const el = elements[i];
+                        if (el && el.tagName) {
+                            el.style.backgroundColor = 'rgba(79, 70, 229, 0.1)';
+                            el.style.outline = '2px solid #4f46e5';
+                            count++;
+                            
+                            // Adiciona informações sobre o elemento
+                            const tagName = el.tagName.toLowerCase();
+                            const id = el.id ? `id="${el.id}"` : '';
+                            const classes = el.className ? `class="${el.className}"` : '';
+                            elementsHTML += `<div class="bg-white p-2 rounded-md mb-1"><code>&lt;${tagName} ${id} ${classes}&gt;</code></div>`;
+                        }
+                    }
+                    
+                    if (count > 0) {
+                        selectionPlaygroundResult.innerHTML = `
+                        <div class="text-primary font-medium mb-2">Seleção bem-sucedida! ${count} elemento(s) encontrado(s):</div>
+                        <div class="bg-gray-100 p-2 rounded-md mb-3">
+                            <code class="block mb-1">${code}</code>
+                        </div>
+                        <div class="text-sm font-medium mb-1">Elementos selecionados:</div>
+                        ${elementsHTML}
+                        `;
+                    } else {
+                        selectionPlaygroundResult.innerHTML = `
+                        <div class="text-yellow-600 font-medium">Nenhum elemento encontrado com o seletor: ${value}</div>
+                        <div class="mt-2 text-sm">Verifique se o seletor está correto e tente novamente.</div>
+                        `;
+                    }
+                    
+                } catch (error) {
+                    selectionPlaygroundResult.innerHTML = `
+                    <div class="text-red-600 font-medium">Erro ao selecionar elementos:</div>
+                    <div class="mt-1 text-sm">${error.message}</div>
+                    `;
+                }
+            });
+            
+            // Inicializa o primeiro método como selecionado
+            selectorMethods[0].click();
+        });
+    </script>
+
+    <script id="manipulation-examples-script">
+        document.addEventListener('DOMContentLoaded', function() {
+            // Exemplo de Manipulação de Conteúdo
+            const runContentCode = document.getElementById('run-content-code');
+            const resetContent = document.getElementById('reset-content');
+            
+            runContentCode.addEventListener('click', function() {
+                // Alterar texto de um elemento
+                document.getElementById('texto-simples').textContent = 'Texto alterado com textContent!';
+                
+                // Alterar HTML de um elemento
+                document.getElementById('texto-html').innerHTML = 'Texto com <strong>formatação HTML</strong> usando innerHTML!';
+                
+                // Obter o valor de um input
+                const valorInput = document.getElementById('meu-input').value;
+                document.getElementById('valor-input').textContent = valorInput;
+                
+                // Alterar o valor de um input
+                document.getElementById('meu-input').value = 'Novo valor!';
+            });
+            
+            resetContent.addEventListener('click', function() {
+                document.getElementById('texto-simples').textContent = 'Este é um texto simples.';
+                document.getElementById('texto-html').innerHTML = 'Este texto contém HTML.';
+                document.getElementById('meu-input').value = 'Texto inicial';
+                document.getElementById('valor-input').textContent = 'Texto inicial';
+            });
+            
+            // Exemplo de Manipulação de Atributos e Estilos
+            const runAttributesCode = document.getElementById('run-attributes-code');
+            const resetAttributes = document.getElementById('reset-attributes');
+            
+            runAttributesCode.addEventListener('click', function() {
+                // Manipular atributos
+                const link = document.getElementById('meu-link');
+                link.setAttribute('href', 'https://www.example.com');
+                link.setAttribute('target', '_blank');
+                link.textContent = 'Link modificado (abre em nova aba)';
+                
+                // Manipular classes
+                const elemento = document.getElementById('elemento-classes');
+                elemento.classList.add('destaque');
+                elemento.classList.remove('normal');
+                elemento.classList.toggle('arredondado');
+                
+                // Manipular estilos diretamente
+                const caixa = document.getElementById('caixa-estilo');
+                caixa.style.backgroundColor = '#4f46e5';
+                caixa.style.color = 'white';
+                caixa.style.padding = '10px';
+                caixa.style.borderRadius = '8px';
+            });
+            
+            resetAttributes.addEventListener('click', function() {
+                const link = document.getElementById('meu-link');
+                link.setAttribute('href', '#');
+                link.removeAttribute('target');
+                link.textContent = 'Este é um link';
+                
+                const elemento = document.getElementById('elemento-classes');
+                elemento.className = 'normal border border-gray-300 p-2 mb-3';
+                
+                const caixa = document.getElementById('caixa-estilo');
+                caixa.style = '';
+                caixa.className = 'border border-gray-300 p-2';
+            });
+            
+            // Exemplo de Criação e Remoção de Elementos
+            const runCreateCode = document.getElementById('run-create-code');
+            const resetCreate = document.getElementById('reset-create');
+            
+            runCreateCode.addEventListener('click', function() {
+                // Criar um novo elemento
+                const novoParagrafo = document.createElement('p');
+                novoParagrafo.textContent = 'Este parágrafo foi criado com JavaScript!';
+                novoParagrafo.className = 'novo-elemento';
+                novoParagrafo.style.color = '#4f46e5';
+                
+                // Adicionar o elemento ao DOM
+                const container = document.getElementById('container-elementos');
+                container.appendChild(novoParagrafo);
+                
+                // Criar e inserir um elemento antes de outro
+                const novoItem = document.createElement('li');
+                novoItem.textContent = 'Novo item no topo';
+                novoItem.className = 'novo-elemento';
+                const lista = document.getElementById('lista-elementos');
+                lista.insertBefore(novoItem, lista.firstChild);
+                
+                // Remover um elemento
+                const itemRemover = document.getElementById('item-remover');
+                if (itemRemover) {
+                    itemRemover.parentNode.removeChild(itemRemover);
+                }
+            });
+            
+            resetCreate.addEventListener('click', function() {
+                // Restaura o container
+                const container = document.getElementById('container-elementos');
+                container.innerHTML = '<h4 class="text-sm font-medium mb-2">Container para novos elementos:</h4>';
+                
+                // Restaura a lista
+                const lista = document.getElementById('lista-elementos');
+                lista.innerHTML = `
+                <li>Item 1</li>
+                <li id="item-remover">Item para remover</li>
+                <li>Item 3</li>
+                `;
+            });
+        });
+    </script>
+
+    <script id="events-examples-script">
+        document.addEventListener('DOMContentLoaded', function() {
+            // Exemplo de Eventos
+            const runEventsCode = document.getElementById('run-events-code');
+            const resetEvents = document.getElementById('reset-events');
+            
+            let eventListeners = [];
+            
+            runEventsCode.addEventListener('click', function() {
+                // Limpa os event listeners anteriores
+                eventListeners.forEach(listener => {
+                    listener.element.removeEventListener(listener.type, listener.handler);
+                });
+                eventListeners = [];
+                
+                // Método addEventListener
+                const botao = document.getElementById('meu-botao');
+                const clickHandler = function() {
+                    document.getElementById('resultado-evento').textContent = 'Botão clicado!';
+                    this.style.backgroundColor = '#4f46e5';
+                    this.style.color = 'white';
+                };
+                botao.addEventListener('click', clickHandler);
+                eventListeners.push({ element: botao, type: 'click', handler: clickHandler });
+                
+                // Evento de mouse
+                const caixa = document.getElementById('caixa-hover');
+                const mouseoverHandler = function() {
+                    this.style.backgroundColor = '#f3f4f6';
+                    this.style.transform = 'scale(1.05)';
+                };
+                const mouseoutHandler = function() {
+                    this.style.backgroundColor = 'white';
+                    this.style.transform = 'scale(1)';
+                };
+                caixa.addEventListener('mouseover', mouseoverHandler);
+                caixa.addEventListener('mouseout', mouseoutHandler);
+                eventListeners.push({ element: caixa, type: 'mouseover', handler: mouseoverHandler });
+                eventListeners.push({ element: caixa, type: 'mouseout', handler: mouseoutHandler });
+                
+                // Evento de teclado
+                const input = document.getElementById('input-teclado');
+                const keyupHandler = function(event) {
+                    document.getElementById('tecla-pressionada').textContent = `Tecla: ${event.key}, Código: ${event.keyCode || event.which}`;
+                };
+                input.addEventListener('keyup', keyupHandler);
+                eventListeners.push({ element: input, type: 'keyup', handler: keyupHandler });
+                
+                // Feedback visual
+                document.getElementById('events-result').classList.add('result-highlight');
+                setTimeout(() => {
+                    document.getElementById('events-result').classList.remove('result-highlight');
+                }, 300);
+            });
+            
+            resetEvents.addEventListener('click', function() {
+                // Limpa os event listeners
+                eventListeners.forEach(listener => {
+                    listener.element.removeEventListener(listener.type, listener.handler);
+                });
+                eventListeners = [];
+                
+                // Restaura os elementos
+                const botao = document.getElementById('meu-botao');
+                botao.style = '';
+                botao.className = 'bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-button mb-4 !rounded-button whitespace-nowrap';
+                
+                document.getElementById('resultado-evento').textContent = 'Resultado do evento aparecerá aqui.';
+                
+                const caixa = document.getElementById('caixa-hover');
+                caixa.style = '';
+                caixa.className = 'border border-gray-300 p-3 rounded-md mb-4 transition-all duration-300';
+                
+                document.getElementById('input-teclado').value = '';
+                document.getElementById('tecla-pressionada').textContent = 'Informações da tecla aparecerão aqui.';
+            });
+            
+            // Exemplo de Propagação de Eventos
+            const runPropagationCode = document.getElementById('run-propagation-code');
+            const resetPropagation = document.getElementById('reset-propagation');
+            
+            let propagationListeners = [];
+            
+            runPropagationCode.addEventListener('click', function() {
+                // Limpa os event listeners anteriores
+                propagationListeners.forEach(listener => {
+                    listener.element.removeEventListener(listener.type, listener.handler, listener.capture);
+                });
+                propagationListeners = [];
+                
+                // Limpa o log
+                document.getElementById('event-log').innerHTML = '';
+                
+                // Função para adicionar log
+                function addLog(message, color = 'black') {
+                    const log = document.getElementById('event-log');
+                    const entry = document.createElement('div');
+                    entry.textContent = message;
+                    entry.style.color = color;
+                    log.appendChild(entry);
+                    
+                    // Limitar o número de entradas
+                    if (log.children.length > 8) {
+                        log.removeChild(log.firstChild);
+                    }
+                }
+                
+                // Adicionar eventos aos elementos aninhados (borbulhamento)
+                const avo = document.getElementById('avo');
+                const pai = document.getElementById('pai');
+                const filho = document.getElementById('filho');
+                const botaoParar = document.getElementById('botao-parar');
+                
+                const avoClickBubble = function(e) {
+                    addLog('Avô clicado (borbulhamento)');
+                };
+                avo.addEventListener('click', avoClickBubble);
+                propagationListeners.push({ element: avo, type: 'click', handler: avoClickBubble, capture: false });
+                
+                const paiClickBubble = function(e) {
+                    addLog('Pai clicado (borbulhamento)');
+                };
+                pai.addEventListener('click', paiClickBubble);
+                propagationListeners.push({ element: pai, type: 'click', handler: paiClickBubble, capture: false });
+                
+                const filhoClickBubble = function(e) {
+                    addLog('Filho clicado (borbulhamento)');
+                };
+                filho.addEventListener('click', filhoClickBubble);
+                propagationListeners.push({ element: filho, type: 'click', handler: filhoClickBubble, capture: false });
+                
+                // Evento com captura (terceiro parâmetro true)
+                const avoClickCapture = function(e) {
+                    addLog('Avô clicado (captura)', 'blue');
+                };
+                avo.addEventListener('click', avoClickCapture, true);
+                propagationListeners.push({ element: avo, type: 'click', handler: avoClickCapture, capture: true });
+                
+                const paiClickCapture = function(e) {
+                    addLog('Pai clicado (captura)', 'blue');
+                };
+                pai.addEventListener('click', paiClickCapture, true);
+                propagationListeners.push({ element: pai, type: 'click', handler: paiClickCapture, capture: true });
+                
+                // Parar propagação
+                const botaoPararClick = function(e) {
+                    addLog('Propagação interrompida!', 'red');
+                    e.stopPropagation();
+                };
+                botaoParar.addEventListener('click', botaoPararClick);
+                propagationListeners.push({ element: botaoParar, type: 'click', handler: botaoPararClick, capture: false });
+                
+                // Adiciona uma mensagem inicial ao log
+                addLog('Clique nos elementos para ver a propagação de eventos', '#4f46e5');
+            });
+            
+            resetPropagation.addEventListener('click', function() {
+                // Limpa os event listeners
+                propagationListeners.forEach(listener => {
+                    listener.element.removeEventListener(listener.type, listener.handler, listener.capture);
+                });
+                propagationListeners = [];
+                
+                // Limpa o log
+                document.getElementById('event-log').innerHTML = '';
+            });
+        });
+    </script>
+
+    <script id="challenges-script">
+        document.addEventListener('DOMContentLoaded', function() {
+            // Desafio 1: Lista de Tarefas
+            const todoInput = document.getElementById('todo-input');
+            const addTodoButton = document.getElementById('add-todo');
+            const todoList = document.getElementById('todo-list');
+            
+            // Função para adicionar uma nova tarefa
+            function addTodo() {
+                const todoText = todoInput.value.trim();
+                if (todoText) {
+                    // Cria um novo item de lista
+                    const li = document.createElement('li');
+                    li.className = 'flex items-center justify-between p-2 border border-gray-200 rounded-md';
+                    
+                    // Cria o conteúdo do item
+                    li.innerHTML = `
+                    <div class="flex items-center">
+                        <label class="custom-checkbox flex items-center">
+                            <input type="checkbox" class="todo-check">
+                            <span class="checkmark"></span>
+                            <span class="ml-6">${todoText}</span>
+                        </label>
+                    </div>
+                    <button class="delete-todo text-gray-400 hover:text-red-500">
+                        <span class="w-6 h-6 flex items-center justify-center"><i class="ri-delete-bin-line"></i></span>
+                    </button>
+                    `;
+                    
+                    // Adiciona o item à lista
+                    todoList.appendChild(li);
+                    
+                    // Limpa o campo de entrada
+                    todoInput.value = '';
+                    
+                    // Adiciona evento ao checkbox
+                    const checkbox = li.querySelector('.todo-check');
+                    checkbox.addEventListener('change', function() {
+                        const todoText = this.parentNode.querySelector('span:last-child');
+                        if (this.checked) {
+                            todoText.style.textDecoration = 'line-through';
+                            todoText.style.color = '#9ca3af';
+                        } else {
+                            todoText.style.textDecoration = 'none';
+                            todoText.style.color = '';
+                        }
+                    });
+                    
+                    // Adiciona evento ao botão de excluir
+                    const deleteButton = li.querySelector('.delete-todo');
+                    deleteButton.addEventListener('click', function() {
+                        li.remove();
+                    });
+                }
+            }
+            
+            // Evento de clique no botão de adicionar
+            addTodoButton.addEventListener('click', addTodo);
+            
+            // Evento de tecla Enter no campo de entrada
+            todoInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    addTodo();
+                }
+            });
+            
+            // Adiciona eventos aos checkboxes existentes
+            document.querySelectorAll('.todo-check').forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    const todoText = this.parentNode.querySelector('span:last-child');
+                    if (this.checked) {
+                        todoText.style.textDecoration = 'line-through';
+                        todoText.style.color = '#9ca3af';
+                    } else {
+                        todoText.style.textDecoration = 'none';
+                        todoText.style.color = '';
+                    }
+                });
+            });
+            
+            // Adiciona eventos aos botões de excluir existentes
+            document.querySelectorAll('.delete-todo').forEach(button => {
+                button.addEventListener('click', function() {
+                    this.closest('li').remove();
+                });
+            });
+            
+            // Desafio 2: Galeria de Imagens
+            const thumbnails = document.querySelectorAll('.thumbnail');
+            const mainImage = document.querySelector('#main-image img');
+            
+            thumbnails.forEach(thumbnail => {
+                thumbnail.addEventListener('click', function() {
+                    // Atualiza a imagem principal
+                    const imgSrc = this.querySelector('img').src;
+                    mainImage.src = imgSrc;
+                    
+                    // Remove a borda de todas as miniaturas
+                    thumbnails.forEach(thumb => {
+                        thumb.classList.remove('border-primary');
+                        thumb.classList.remove('border-2');
+                        thumb.classList.add('border', 'border-gray-200');
+                    });
+                    
+                    // Adiciona a borda à miniatura selecionada
+                    this.classList.remove('border', 'border-gray-200');
+                    this.classList.add('border-2', 'border-primary');
+                });
+            });
+            
+            // Desafio 3: Formulário com Validação
+            const usernameInput = document.getElementById('username');
+            const emailInput = document.getElementById('email');
+            const passwordInput = document.getElementById('password');
+            const confirmPasswordInput = document.getElementById('confirm-password');
+            const submitButton = document.getElementById('submit-form');
+            
+            const usernameError = document.getElementById('username-error');
+            const emailError = document.getElementById('email-error');
+            const passwordError = document.getElementById('password-error');
+            const confirmPasswordError = document.getElementById('confirm-password-error');
+            
+            // Função para validar o formulário
+            function validateForm() {
+                let isValid = true;
+                
+                // Valida o nome de usuário
+                if (usernameInput.value.trim().length < 3) {
+                    usernameError.classList.remove('hidden');
+                    usernameInput.classList.add('border-red-500');
+                    isValid = false;
+                } else {
+                    usernameError.classList.add('hidden');
+                    usernameInput.classList.remove('border-red-500');
+                }
+                
+                // Valida o email
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(emailInput.value.trim())) {
+                    emailError.classList.remove('hidden');
+                    emailInput.classList.add('border-red-500');
+                    isValid = false;
+                } else {
+                    emailError.classList.add('hidden');
+                    emailInput.classList.remove('border-red-500');
+                }
+                
+                // Valida a senha
+                if (passwordInput.value.length < 6) {
+                    passwordError.classList.remove('hidden');
+                    passwordInput.classList.add('border-red-500');
+                    isValid = false;
+                } else {
+                    passwordError.classList.add('hidden');
+                    passwordInput.classList.remove('border-red-500');
+                }
+                
+                // Valida a confirmação de senha
+                if (confirmPasswordInput.value !== passwordInput.value) {
+                    confirmPasswordError.classList.remove('hidden');
+                    confirmPasswordInput.classList.add('border-red-500');
+                    isValid = false;
+                } else {
+                    confirmPasswordError.classList.add('hidden');
+                    confirmPasswordInput.classList.remove('border-red-500');
+                }
+                
+                // Habilita ou desabilita o botão de envio
+                submitButton.disabled = !isValid;
+                if (isValid) {
+                    submitButton.classList.remove('opacity-50', 'cursor-not-allowed');
+                } else {
+                    submitButton.classList.add('opacity-50', 'cursor-not-allowed');
+                }
+                
+                return isValid;
+            }
+            
+            // Adiciona eventos de input para validação em tempo real
+            usernameInput.addEventListener('input', validateForm);
+            emailInput.addEventListener('input', validateForm);
+            passwordInput.addEventListener('input', validateForm);
+            confirmPasswordInput.addEventListener('input', validateForm);
+            
+            // Evento de envio do formulário
+            document.getElementById('validation-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                if (validateForm()) {
+                    alert('Formulário enviado com sucesso!');
+                    this.reset();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
